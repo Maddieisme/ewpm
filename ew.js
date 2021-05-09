@@ -1,3 +1,4 @@
+
 const isRoot = process.getuid && process.getuid() === 0;
 const fs = require('fs-extra');
 const targz = require('targz');
@@ -9,11 +10,12 @@ if (!fs.existsSync("/etc/ew/installed")) fs.mkdirSync("/etc/ew/installed");
 if (fs.existsSync("/etc/ew/lock")) return console.log("/etc/ew/lock exists, cancelling.");
 if (!fs.existsSync("/usr/bin/curl")) return console.log("could not find curl binary, exiting...");
 fs.writeFileSync('/etc/ew/lock', 'ew package manager lock\n');
-
+if (!fs.existsSync('/etc/ew/sources.list')) fs.writeFileSync("/etc/ew/sources.list", " ");
 if (!fs.existsSync("/etc/ew/packages.json")) {
     updatePackageList();
 };
 
+try{
 switch (process.argv[2]) {
     case ('reload'):
     case ('-r'):
@@ -37,10 +39,17 @@ switch (process.argv[2]) {
         console.log("list of commands available for ew package manager:\n \n -r: reload package list\n upgrade: upgrade ewpm\n -i: installs a package\n -u: uninstalls a package\n -pl: shows the list of packages that can be installed\n -h: prints list of commands\n");
         break;
 }
+}
+
+catch(err){
+    console.warn("An unknown error has occurred, exiting.." +  `\n more descriptive error: ${err}`);
+    fs.removeSync("/etc/ew/lock");
+    return;
+}
 
 function updatePackageList() {
     process.stdout.write("Updating package list...");
-    download("https://acetaminophen.me/ewsite/packages.json", '/etc/ew/', 'packages.json')
+    download("https://ewsite.0tcqd.repl.co/packages.json", '/etc/ew/', 'packages.json')
     process.stdout.write('done!\n');
 };
 
@@ -61,49 +70,49 @@ function install(package) {
             if (fs.existsSync(`/tmp/${package}.ew.tar.gz`)) fs.unlinkSync(`/tmp/${package}.ew.tar.gz`);
         });
     });
-
-    //download the package json file for future use
-    download(`https://acetaminophen.me/ewsite/packageInfo/${package}.json`, '/etc/ew/installed/', `${package}.json`);
     process.stdout.write("done!\n");
     process.stdout.write(`Successfully installed ${package}!\n`);
     //do some dependency checking
     const json = require(`/etc/ew/installed/${package}.json`);
-
+    //check if json file exists
+    if(fs.existsSync(`/etc/ew/${package}.json`)){
+        return console.warn("WARNING: JSON file for package does not exist, this could lead to a few problems. Please contact the package developer to correct this.");
+    }
     //the name of the object key for dependencies is depends
     if (json["depends"]) {
-        let dependscount = json.depends.length;
-        switch (dependscount) {
+        switch (json.depends.length) {
             case 1:
-                console.log(`this package requires ${dependscount} dependency, installing now...`);
+                console.log(`this package requires ${json.depends.length} dependency, installing now...`);
                 break;
-            case dependscount > 1:
-                console.log(`this package requires ${dependscount} dependencies, installing them now...`);
+            case json.depends.length > 1:
+                console.log(`this package requires ${json.depends.length} dependencies, installing them now...`);
         }
-        let depens = dependscount;
 
         //do a for loop to install the package
-        for (let dependencies = json.depends; dependscount > 0; dependscount--) {
-            //get the first result of the array and shift the next dependency to the first result
-            var ndependencies = dependencies.shift();
-            //convert that object from the array into a single string
-            ndependencies = ndependencies.toString();
+        for (let i = 0; i <= json.depends.length; i++) {
+            var installedCount = i;
+            //get the first result of the array and shift the next dependency to the first result and convert it to a string
+            let dependencies = json.depends;
+            dependencyToInstall = dependencies.shift();
+            dependencyToInstall = dependencyToInstall.toString();
             //do a check to see if the package is already installed
 
-            if (fs.existsSync(`/etc/ew/installed/${ndependencies}.json`)) {
-                console.log(`${ndependencies} is already installed!`);
+            if (fs.existsSync(`/etc/ew/installed/${dependencyToInstall}.json`)) {
+                console.log(`${dependencyToInstall} is already installed!`);
                 //delete the object from the array
-                delete(ndependencies[0]);
+                delete(dependencies[0]);
                 //continue the for loop for the other dependencies
                 continue;
             }
 
             //install the dependency
-            install(ndependencies);
-            //clear the array for another object 
-            delete(ndependencies[0]);
+            install(dependencyToInstall);
+            //clear the spot in the array for another object 
+            delete(dependencies[0]);
+            installedCount++;
         }
 
-        console.log(`Successfully installed ${package} with ${depens} dependencies!`);
+        console.log(`Successfully installed ${package} with ${installedCount} dependencies!`);
     }
 };
 
@@ -112,8 +121,8 @@ function uninstall(package) {
     if (!process.argv[3]) return console.log("Please specify a package to uninstall.");
     process.stdout.write(`removing ${package}...`);
 
-    //check if the package json file is present, if not, the package does not exist.
-    if (!fs.existsSync(`/etc/ew/installed/${package}.json`)) return console.log("the specified package has already been removed or not installed.");
+    //check if the package json file is present, if not, we cannot remove it unfortunately. (alternative removal will be added in a future update)
+    if (!fs.existsSync(`/etc/ew/installed/${package}.json`)) return console.log("Package JSON file does not exist, cannot remove.");
 
     //load the json file to read the dirs to delete
     let json = require(`/etc/ew/installed/${package}.json`);
@@ -121,14 +130,12 @@ function uninstall(package) {
     //assign a variable to the json object key named directoriesToDelete
     //this is required for all packages.
     let directories = json.directoriesToDelete;
-    let directorycount = directories.length;
-    for (let file = directories; directorycount > 0; directorycount--) {
-        var newfile = file.shift();
-        newfile = newfile.toString();
-        fs.removeSync(newfile);
-        delete(newfile[0]);
+    for (let i = 0; i <= 0; i++) {
+        let directoryToRemove = directories.shift().toString();
+        fs.removeSync(directoryToRemove);
+        delete(directories[0]);
     }
-    fs.removeSync(`/etc/ew/installed/${package}.json`);
+
     process.stdout.write(`done!\n`);
     process.stdout.write(`Successfully uninstalled ${package}!\n`);
 }
@@ -149,6 +156,7 @@ function download(url, dir, filename) {
     let download = require('child_process').execFileSync('curl', ['--silent', '-L', url], { encoding: 'utf8', maxBuffer: Infinity });
     fs.writeFileSync(dir + filename, download);
     //sometimes necessary, do it anyways as it doesn't matter
-    fs.chmod(dir + filename, 777);
+    fs.chmod(dir + filename, 775);
 }
+
 fs.removeSync('/etc/ew/lock');
