@@ -3,14 +3,17 @@ const fs = require('fs-extra');
 const targz = require('targz');
 const http = require('https');
 
+console.log("initating startup actions...");
 if (!isRoot) return console.log("You must be root to excecute this command!");
-if (!fs.existsSync("/etc/ew")) fs.mkdirSync("/etc/ew");
-if (!fs.existsSync("/etc/ew/installed")) fs.mkdirSync("/etc/ew/installed");
+if (!fs.existsSync("/etc/ew")) {fs.mkdirSync("/etc/ew"); console.log("created /etc/ew directory.")};
+if (!fs.existsSync("/etc/ew/installed")) {fs.mkdirSync("/etc/ew/installed"); console.log("created /etc/ew/installed directory.")};
 if (fs.existsSync("/etc/ew/lock")) return console.log("/etc/ew/lock exists, cancelling.");
 if (!fs.existsSync("/usr/bin/curl")) return console.log("could not find curl binary, exiting...");
 fs.writeFileSync('/etc/ew/lock', 'ew package manager lock\n');
-if (!fs.existsSync('/etc/ew/sources.list')) fs.writeFileSync("/etc/ew/sources.list", " ");
+console.log("created lock file.");
+if (!fs.existsSync('/etc/ew/sources.list')) {fs.writeFileSync("/etc/ew/sources.list", " "); console.log("created sources file.")};
 if (!fs.existsSync("/etc/ew/packages.json")) {
+    console.log("package list file not found, reloading sources");
     updatePackageList();
 };
 
@@ -70,13 +73,13 @@ function install(package) {
         });
     });
     process.stdout.write("done!\n");
+    if(!fs.existsSync(`/etc/ew/${package}.json`)){
+        return console.warn("WARNING: JSON file for package does not exist, this could lead to a few problems. Please contact the package developer to correct this.");
+    }
     process.stdout.write(`Successfully installed ${package}!\n`);
     //do some dependency checking
     const json = require(`/etc/ew/installed/${package}.json`);
     //check if json file exists
-    if(fs.existsSync(`/etc/ew/${package}.json`)){
-        return console.warn("WARNING: JSON file for package does not exist, this could lead to a few problems. Please contact the package developer to correct this.");
-    }
     //the name of the object key for dependencies is depends
     if (json["depends"]) {
         switch (json.depends.length) {
@@ -129,7 +132,7 @@ function uninstall(package) {
     //assign a variable to the json object key named directoriesToDelete
     //this is required for all packages.
     let directories = json.directoriesToDelete;
-    for (let i = 0; i <= 0; i++) {
+    for (let i = 0; i <= directories.length; i++) {
         let directoryToRemove = directories.shift().toString();
         fs.removeSync(directoryToRemove);
         delete(directories[0]);
@@ -150,7 +153,7 @@ function packagelist() {
     console.log(Object.keys(json));
 
 }
-
+//TODO: remove curl as a dependency
 function download(url, dir, filename) {
     let download = require('child_process').execFileSync('curl', ['--silent', '-L', url], { encoding: 'utf8', maxBuffer: Infinity });
     fs.writeFileSync(dir + filename, download);
