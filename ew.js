@@ -1,4 +1,3 @@
-
 const isRoot = process.getuid && process.getuid() === 0;
 const fs = require('fs-extra');
 const targz = require('targz');
