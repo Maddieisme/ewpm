@@ -1,6 +1,6 @@
 const isRoot = process.getuid && process.getuid() === 0;
 const fs = require('fs');
-const targz = require('tar');
+const tar = require('tar');
 const download = require('./modules/download');
 const dircheck = require('./modules/dirfiledif');
 
@@ -55,7 +55,7 @@ function updatePackageList() {
     return process.stdout.write('done!\n');
 };
 
-function install(package) {
+async function install(package) {
     const packageList = require("/etc/ew/packages.json");
 
     let packageURL = packageList[package];
@@ -65,21 +65,20 @@ function install(package) {
     process.stdout.write(`Downloading ${package}... `);
     //use download-file module to store the archive of the package in tmp
 
-    download(packageURL, '/tmp/', `${package}.ew.tar.gz`, function() {
-        targz.decompress({ src: `/tmp/${package}.ew.tar.gz`, dest: '/' }, function() {
-
-            //sometimes the archive may or may not exist here, so we should check first if it does.
-           fs.unlinkSync(`/tmp/${package}.ew.tar.gz`);
-        });
+    download(packageURL, '/tmp/', `${package}.ew.tar.gz`, function(){
+        tar.extract({
+            file: `/tmp/${package}.ew.tar.gz`,
+            C: '/'
+        }).then(_=> {fs.unlinkSync(`/tmp/${package}.ew.tar.gz`)});
+        process.stdout.write("done!\n");
     });
-    process.stdout.write("done!\n");
-    if(!fs.existsSync(`/etc/ew/${package}.json`)){
+    if(!fs.existsSync(`/etc/ew/packages/${package}.json`)){
         console.warn("WARNING: JSON file for package does not exist, this could lead to a few problems. Please contact the package developer to correct this.");
         return process.stdout.write(`Partially installed ${package}\n`);
     }
     process.stdout.write(`Successfully installed ${package}!\n`);
     //do some dependency checking
-    const json = require(`/etc/ew/installed/${package}.json`);
+    const json = require(`/etc/ew/packages/${package}.json`);
     //check if json file exists
     //the name of the object key for dependencies is depends
     if (json["depends"]) {
