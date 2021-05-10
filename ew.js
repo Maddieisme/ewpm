@@ -1,14 +1,14 @@
 const isRoot = process.getuid && process.getuid() === 0;
-const fs = require('fs-extra');
-const targz = require('targz');
-const http = require('https');
+const fs = require('fs');
+const targz = require('tar');
+const download = require('./modules/download');
+const dircheck = require('./modules/dirfiledif');
 
 console.log("initating startup actions...");
 if (!isRoot) return console.log("You must be root to excecute this command!");
 if (!fs.existsSync("/etc/ew")) {fs.mkdirSync("/etc/ew"); console.log("created /etc/ew directory.")};
 if (!fs.existsSync("/etc/ew/installed")) {fs.mkdirSync("/etc/ew/installed"); console.log("created /etc/ew/installed directory.")};
 if (fs.existsSync("/etc/ew/lock")) return console.log("/etc/ew/lock exists, cancelling.");
-if (!fs.existsSync("/usr/bin/curl")) return console.log("could not find curl binary, exiting...");
 fs.writeFileSync('/etc/ew/lock', 'ew package manager lock\n');
 console.log("created lock file.");
 if (!fs.existsSync('/etc/ew/sources.list')) {fs.writeFileSync("/etc/ew/sources.list", " "); console.log("created sources file.")};
@@ -45,14 +45,14 @@ switch (process.argv[2]) {
 
 catch(err){
     console.warn("An unknown error has occurred, exiting.." +  `\n more descriptive error: ${err}`);
-    fs.removeSync("/etc/ew/lock");
+    fs.unlinkSync("/etc/ew/lock");
     return;
 }
 
 function updatePackageList() {
     process.stdout.write("Updating package list...");
-    download("https://ewsite.0tcqd.repl.co/packages.json", '/etc/ew/', 'packages.json')
-    process.stdout.write('done!\n');
+   download("https://ewsite.0tcqd.repl.co/packages.json", '/etc/ew/', 'packages.json');
+    return process.stdout.write('done!\n');
 };
 
 function install(package) {
@@ -69,12 +69,13 @@ function install(package) {
         targz.decompress({ src: `/tmp/${package}.ew.tar.gz`, dest: '/' }, function() {
 
             //sometimes the archive may or may not exist here, so we should check first if it does.
-            if (fs.existsSync(`/tmp/${package}.ew.tar.gz`)) fs.unlinkSync(`/tmp/${package}.ew.tar.gz`);
+           fs.unlinkSync(`/tmp/${package}.ew.tar.gz`);
         });
     });
     process.stdout.write("done!\n");
     if(!fs.existsSync(`/etc/ew/${package}.json`)){
-        return console.warn("WARNING: JSON file for package does not exist, this could lead to a few problems. Please contact the package developer to correct this.");
+        console.warn("WARNING: JSON file for package does not exist, this could lead to a few problems. Please contact the package developer to correct this.");
+        return process.stdout.write(`Partially installed ${package}\n`);
     }
     process.stdout.write(`Successfully installed ${package}!\n`);
     //do some dependency checking
@@ -134,7 +135,13 @@ function uninstall(package) {
     let directories = json.directoriesToDelete;
     for (let i = 0; i <= directories.length; i++) {
         let directoryToRemove = directories.shift().toString();
-        fs.removeSync(directoryToRemove);
+        let diritem = dircheck(directoryToRemove);
+        if(diritem == 0){
+            fs.unlinkSync(directoryToRemove);
+        }
+        else if(diritem == 1){
+            fs.rmdirSync(directoryToRemove);
+        }
         delete(directories[0]);
     }
 
@@ -153,12 +160,5 @@ function packagelist() {
     console.log(Object.keys(json));
 
 }
-//TODO: remove curl as a dependency
-function download(url, dir, filename) {
-    let download = require('child_process').execFileSync('curl', ['--silent', '-L', url], { encoding: 'utf8', maxBuffer: Infinity });
-    fs.writeFileSync(dir + filename, download);
-    //sometimes necessary, do it anyways as it doesn't matter
-    fs.chmod(dir + filename, 775);
-}
 
-fs.removeSync('/etc/ew/lock');
+fs.unlinkSync('/etc/ew/lock');

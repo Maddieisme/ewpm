@@ -4,22 +4,23 @@
     "description": "The worlds first Linux package manager in JavaScript.",
     "main": "ew.js",
     "scripts": {
-        "build": "pkg -t node13-linux-x64 ew.js",
+        "build": "pkg -t node14-linux-x64 ew.js",
         "install": "chmod +x ew && mv ew /usr/bin"
     },
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/7OU/ew.git"
+        "url": "git+https://github.com/0tcQd/ewpm.git"
     },
     "author": "Evan & Matt",
     "license": "AGPL-3.0",
     "bugs": {
-        "url": "https://github.com/7OU/ew/issues"
+        "url": "https://github.com/0tcQd/ewpm/issues"
     },
-    "homepage": "https://github.com/7OU/ew#readme",
+    "homepage": "https://github.com/0tcQd/ewpm#readme",
     "dependencies": {
-        "fs-extra": "^9.0.1",
+        "fs": "*",
         "https": "^1.0.0",
-        "targz": "^1.0.1"
+        "pkg": "^5.1.0",
+        "tar": "^6.1.0"
     }
 }
