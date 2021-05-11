@@ -1,0 +1,3 @@
+{ 
+ "build": "tar -cvzf test.ew.tar.gz *"
+}

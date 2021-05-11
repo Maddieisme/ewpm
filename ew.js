@@ -3,6 +3,7 @@ const fs = require('fs');
 const tar = require('tar');
 const download = require('./modules/download');
 const dircheck = require('./modules/dirfiledif');
+const pkggen = require('./modules/pkggen');
 
 console.log("initating startup actions...");
 if (!isRoot) return console.log("You must be root to excecute this command!");
@@ -34,6 +35,10 @@ switch (process.argv[2]) {
     case ('-pl'):
     case ('packagelist'):
         packagelist();
+        break;
+    case ('-pkggen'):
+    case ('pkggen'):
+        pkggen();
         break;
     case ('-h'):
     case ('help'):
