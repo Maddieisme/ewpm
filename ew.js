@@ -133,7 +133,7 @@ function uninstall(package) {
     process.stdout.write(`removing ${package}...`);
 
     //check if the package json file is present, if not, we cannot remove it unfortunately. (alternative removal will be added in a future update)
-    if (!fs.existsSync(`/etc/ew/packages/${package}.json`)) return console.log("Package JSON file does not exist, cannot remove.");
+    if (!fs.existsSync(`/etc/ew/packages/${package}.json`)) return console.log("Package JSON file does not exist, this means the package is already uninstalled.");
 
     //load the json file to read the dirs to delete
     let json = require(`/etc/ew/packages/${package}.json`);
@@ -141,26 +141,15 @@ function uninstall(package) {
     //assign a variable to the json object key named directoriesToDelete
     //this is required for all packages.
     let directories = json.directoriesToDelete;
-    console.log(directories);
     for (let i = 0; i <= directories.length; i++) {
         let directoryToRemove = directories.shift();
         directoryToRemove = directoryToRemove.toString();
         let diritem = dircheck(directoryToRemove);
         if(diritem == 0){
-            try{
             fs.unlinkSync(directoryToRemove);
-            }
-            catch(err){
-                console.log(`${directoryToRemove} doesn't exist, continuing..`);
-            }
         }
         else if(diritem == 1){
-            try{
             fs.rmdirSync(directoryToRemove);
-            }
-            catch(err){
-                console.log(`${directoryToRemove} doesn't exist, continuing..`);
-            }
         }
         }
     
