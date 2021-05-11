@@ -3,8 +3,12 @@
 fs = require('fs');
 
 module.exports = function(item){
+    try{
     let objectToCheck = fs.statSync(item);
-    if(fs.isDirectory(objectToCheck)) return 1;
-    else if(fs.isFile(objectToCheck)) return 0;
-    else return undefined;
+    if(fs.statSync(item).isDirectory()) return 1;
+    else if(fs.statSync(item).isFile()) return 0;
+    }
+    catch(err){
+        return undefined;
+    }
 }

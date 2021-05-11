@@ -107,3 +107,7 @@ ew
 
 # macos stuff
 .DS_Store
+modules/.DS_Store
+
+# package folder
+packages/*

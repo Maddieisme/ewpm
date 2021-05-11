@@ -5,7 +5,7 @@ const download = require('./modules/download');
 const dircheck = require('./modules/dirfiledif');
 const pkggen = require('./modules/pkggen');
 
-console.log("initating startup actions...");
+console.log("performing startup actions...");
 if (!isRoot) return console.log("You must be root to excecute this command!");
 if (!fs.existsSync("/etc/ew")) {fs.mkdirSync("/etc/ew"); console.log("created /etc/ew directory.")};
 if (!fs.existsSync("/etc/ew/installed")) {fs.mkdirSync("/etc/ew/installed"); console.log("created /etc/ew/installed directory.")};
@@ -36,7 +36,6 @@ switch (process.argv[2]) {
     case ('packagelist'):
         packagelist();
         break;
-    case ('-pkggen'):
     case ('pkggen'):
         pkggen();
         break;
@@ -60,6 +59,8 @@ function updatePackageList() {
 };
 
 async function install(package) {
+    //check if an argument has been specified
+    if(process.argv[4]) return console.log("please specify a package to install!");
     const packageList = require("/etc/ew/packages.json");
 
     let packageURL = packageList[package];
@@ -76,15 +77,16 @@ async function install(package) {
             sync: 'true'
         })
         fs.unlinkSync(`/tmp/${package}.ew.tar.gz`);
-        process.stdout.write("done!\n");
-    if(!fs.existsSync(`/etc/ew/packages/${package}.json`)){
-        console.warn("WARNING: JSON file for package does not exist, this could lead to a few problems. Please contact the package developer to correct this.");
-        return process.stdout.write(`Partially installed ${package}\n`);
-    } 
+        process.stdout.write("done!\n"); 
     process.stdout.write(`Successfully installed ${package}!\n`);
+    process.stdout.write('performing post install actions...');
     //do some dependency checking
-    const json = require(`/etc/ew/packages/${package}.json`);
     //check if json file exists
+    if(!fs.existsSync(`/etc/ew/packages/${package}.json`)){
+        console.warn("WARNING: package info file doesn't exist. Cannot perform post install actions, returning...");
+        return;
+    }
+    const json = require(`/etc/ew/packages/${package}.json`);
     //the name of the object key for dependencies is depends
     if (json["depends"]) {
         switch (json.depends.length) {
@@ -97,10 +99,10 @@ async function install(package) {
 
         //do a for loop to install the package
         for (let i = 0; i <= json.depends.length; i++) {
-            var installedCount = i;
+            let installedCount = i;
             //get the first result of the array and shift the next dependency to the first result and convert it to a string
             let dependencies = json.depends;
-            dependencyToInstall = dependencies.shift();
+           let dependencyToInstall = dependencies.shift();
             dependencyToInstall = dependencyToInstall.toString();
             //do a check to see if the package is already installed
 
@@ -121,6 +123,7 @@ async function install(package) {
 
         console.log(`Successfully installed ${package} with ${installedCount} dependencies!`);
     }
+    process.stdout.write("done!\n");
 });
 };
 
@@ -130,25 +133,38 @@ function uninstall(package) {
     process.stdout.write(`removing ${package}...`);
 
     //check if the package json file is present, if not, we cannot remove it unfortunately. (alternative removal will be added in a future update)
-    if (!fs.existsSync(`/etc/ew/installed/${package}.json`)) return console.log("Package JSON file does not exist, cannot remove.");
+    if (!fs.existsSync(`/etc/ew/packages/${package}.json`)) return console.log("Package JSON file does not exist, cannot remove.");
 
     //load the json file to read the dirs to delete
-    let json = require(`/etc/ew/installed/${package}.json`);
+    let json = require(`/etc/ew/packages/${package}.json`);
 
     //assign a variable to the json object key named directoriesToDelete
     //this is required for all packages.
     let directories = json.directoriesToDelete;
+    console.log(directories);
     for (let i = 0; i <= directories.length; i++) {
-        let directoryToRemove = directories.shift().toString();
+        let directoryToRemove = directories.shift();
+        directoryToRemove = directoryToRemove.toString();
         let diritem = dircheck(directoryToRemove);
         if(diritem == 0){
+            try{
             fs.unlinkSync(directoryToRemove);
+            }
+            catch(err){
+                console.log(`${directoryToRemove} doesn't exist, continuing..`);
+            }
         }
         else if(diritem == 1){
+            try{
             fs.rmdirSync(directoryToRemove);
+            }
+            catch(err){
+                console.log(`${directoryToRemove} doesn't exist, continuing..`);
+            }
         }
+        }
+    
         delete(directories[0]);
-    }
 
     process.stdout.write(`done!\n`);
     process.stdout.write(`Successfully uninstalled ${package}!\n`);
@@ -156,7 +172,7 @@ function uninstall(package) {
 
 function packagelist() {
     //get the packages json file 
-    const json = require('/etc//ew/packages.json');
+    const json = require('/etc/ew/packages.json');
 
     //print the number of packages available
     console.log(Object.keys(json).length + ' packages are available to be downloaded: ');
