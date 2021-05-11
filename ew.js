@@ -76,6 +76,7 @@ async function install(package) {
             C: '/',
             sync: 'true'
         })
+        
         fs.unlinkSync(`/tmp/${package}.ew.tar.gz`);
         process.stdout.write("done!\n"); 
     process.stdout.write(`Successfully installed ${package}!\n`);
