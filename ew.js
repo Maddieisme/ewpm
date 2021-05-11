@@ -65,17 +65,16 @@ async function install(package) {
     process.stdout.write(`Downloading ${package}... `);
     //use download-file module to store the archive of the package in tmp
 
-    download(packageURL, '/tmp/', `${package}.ew.tar.gz`, function(){
+    await download(packageURL, '/tmp/', `${package}.ew.tar.gz`, function(){
         tar.extract({
             file: `/tmp/${package}.ew.tar.gz`,
             C: '/'
-        }).then(_=> {fs.unlinkSync(`/tmp/${package}.ew.tar.gz`)});
+        });
         process.stdout.write("done!\n");
-    });
     if(!fs.existsSync(`/etc/ew/packages/${package}.json`)){
         console.warn("WARNING: JSON file for package does not exist, this could lead to a few problems. Please contact the package developer to correct this.");
         return process.stdout.write(`Partially installed ${package}\n`);
-    }
+    } 
     process.stdout.write(`Successfully installed ${package}!\n`);
     //do some dependency checking
     const json = require(`/etc/ew/packages/${package}.json`);
@@ -116,6 +115,7 @@ async function install(package) {
 
         console.log(`Successfully installed ${package} with ${installedCount} dependencies!`);
     }
+});
 };
 
 function uninstall(package) {
