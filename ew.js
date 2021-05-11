@@ -56,8 +56,7 @@ catch(err){
 
 function updatePackageList() {
     process.stdout.write("Updating package list...");
-   download("https://ewsite.0tcqd.repl.co/packages.json", '/etc/ew/', 'packages.json');
-    return process.stdout.write('done!\n');
+   download("https://ewsite.0tcqd.repl.co/packages.json", '/etc/ew/', 'packages.json', function(){ return process.stdout.write('done!\n');});
 };
 
 async function install(package) {
@@ -68,13 +67,15 @@ async function install(package) {
     if (!packageURL) return console.log("Invalid package specified, try doing sudo ew -r and see if it resolves the issue.");
 
     process.stdout.write(`Downloading ${package}... `);
-    //use download-file module to store the archive of the package in tmp
-
+    
+    //use download module to download package
     await download(packageURL, '/tmp/', `${package}.ew.tar.gz`, function(){
         tar.extract({
             file: `/tmp/${package}.ew.tar.gz`,
-            C: '/'
-        });
+            C: '/',
+            sync: 'true'
+        })
+        fs.unlinkSync(`/tmp/${package}.ew.tar.gz`);
         process.stdout.write("done!\n");
     if(!fs.existsSync(`/etc/ew/packages/${package}.json`)){
         console.warn("WARNING: JSON file for package does not exist, this could lead to a few problems. Please contact the package developer to correct this.");
