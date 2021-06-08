@@ -13,20 +13,29 @@ if (!fs.existsSync('/etc/ew/sources.list')) {fs.writeFileSync("/etc/ew/sources.l
 fs.writeFileSync('/etc/ew/lock', ' ');
 
 try{
+    let cmd = process.argv[2];
     console.log('loading modules....');
      let events = {}
      //since the readdir func returns an array, we will turn it into an object
-        glob.sync('./modules/*.js').forEach(function(file){
-         let dash = file.split("/");
-     if(dash.length == 3) {
-      let dot = dash[2].split(".");
-       if(dot.length == 2) {
-         let key = dot[0];
-         events[key] = require(file);
-       }
-     }
+     glob.sync('./modules/*.js').forEach(function(file){
+        let dash = file.split("/");
+        if(dash.length == 3) {
+            let dot = dash[2].split(".");
+            if(dot.length == 2) {
+                let key = dot[0];
+                events[key] = require(file);
+                console.log(`Loaded ${file}.`);
+            }
+        }
     });
-    console.log(events);
+    console.clear();
+    //this converts the events object into an array of objects
+    let funcs = Object.values(events);
+    //most actions will be performed in the core module, so we will locate the core module
+    let core = funcs.find(c => c.name === "core");
+    core[cmd](process.argv[3]);
+    //all functions in an export can be found by filtering through the keys
+
 }
 catch(err){
     console.warn("An unknown error has occurred, exiting.." +  `\n more descriptive error: ${err}`);

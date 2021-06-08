@@ -3,7 +3,6 @@ const fs = require('fs');
 
 
 // asynchronous source handling
-    module.exports.name = 'source handler';
 
     module.exports.add = (async (url, cb) => {
        /*await download(url, '/etc/ew/sources', `/etc/ew/sources/${url}.json`, function(){

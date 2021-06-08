@@ -4,12 +4,12 @@ const tar = require('tar');
 const download = require('./deps/download');
 const dircheck = require('./deps/dirfiledif');
 
-module.exports.name = "core";
+module.exports.name = "core"
 
 module.exports.install = async function(package) {
     //check if an argument has been specified
     this.package = package;
-    if(process.argv[4]) return console.log("please specify a package to install!");
+    if(package == 'undefined') return console.log("please specify a package to install!");
     const packageList = require("/etc/ew/packages.json");
 
     let packageURL = packageList[package];
