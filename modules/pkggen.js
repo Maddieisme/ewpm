@@ -2,8 +2,9 @@
 const fs = require('fs');
 const readline = require("readline");
 
+module.exports.name = "package generator"
 
-module.exports.main = function(){
+module.exports.pkggen = function(){
 console.log("welcome to EwPM's package generator! I will guide you along the way to setup the package and its build script. \n Lets begin!");
 const rl = readline.createInterface({
     input: process.stdin,

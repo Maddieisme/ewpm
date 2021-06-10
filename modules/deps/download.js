@@ -5,7 +5,7 @@
 const fs = require('fs');
 var http;
 
-module.exports = async function(url, destination, filename, cb) {
+module.exports = function(url, destination, filename, cb) {
     if(url.toString().startsWith('http://')){
         http = require('http');
     }
@@ -13,7 +13,7 @@ module.exports = async function(url, destination, filename, cb) {
         http = require('https');
     }
     try{
-   await http.get(url,(res) => {
+   http.get(url,(res) => {
        const filePath = fs.createWriteStream(destination + filename);
        res.pipe(filePath);
     filePath.on('finish',() => {

@@ -6,20 +6,20 @@ const dircheck = require('./deps/dirfiledif');
 
 module.exports.name = "core"
 
-module.exports.install = async function(package) {
+module.exports.install = (async (package) => {
     //check if an argument has been specified
     this.package = package;
-    if(package == 'undefined') return console.log("please specify a package to install!");
+    if(!package) return console.log("please specify a package to install!");
     const packageList = require("/etc/ew/packages.json");
 
-    let packageURL = packageList[package];
+    let packageURL = packageList[this.package];
     //check if its a valid package aswell..
     if (!packageURL) return console.log("Invalid package specified, try doing sudo ew -r and see if it resolves the issue.");
 
     console.log(`Downloading ${package}... `);
     
     //use download module to download package
-    await download(packageURL, '/tmp/', `${package}.ew.tar.gz`, function(){
+    download(packageURL, '/tmp/', `${package}.ew.tar.gz`, function(){
         console.log(`done!\n extracting ${package} to /...`);
         tar.extract({
             file: `/tmp/${package}.ew.tar.gz`,
@@ -27,8 +27,8 @@ module.exports.install = async function(package) {
             sync: 'true'
         })
         
-        fs.unlinkSync(`/tmp/${package}.ew.tar.gz`);
-        process.stdout.write("done!\n"); 
+    fs.unlinkSync(`/tmp/${package}.ew.tar.gz`);
+    process.stdout.write("done!\n"); 
     process.stdout.write('performing post install actions...');
     //do some dependency checking
     //check if json file exists
@@ -76,7 +76,7 @@ module.exports.install = async function(package) {
     process.stdout.write("done!\n");
     process.stdout.write(`Successfully installed ${package}!\n`);
 });
-};
+});
 
 module.exports.uninstall = async function(package) {
     //check if a package to remove has been specified and return if it wasnt 
@@ -121,3 +121,5 @@ module.exports.packagelist = () => {
     console.log(Object.keys(json));
 
 }
+
+module.exports = module.exports.install(process.argv[2]);

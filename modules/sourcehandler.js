@@ -1,6 +1,7 @@
 const download = require('./deps/download');
 const fs = require('fs');
 
+module.exports.name ="Source Handler"
 
 // asynchronous source handling
 
